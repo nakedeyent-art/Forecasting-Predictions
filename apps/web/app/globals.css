@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f5f1e8;
+  --panel: #fffaf0;
+  --panel-strong: #ffffff;
+  --text: #171614;
+  --muted: #6d665b;
+  --line: #d9cfbf;
+  --accent: #0e7c68;
+  --accent-2: #2357a4;
+  --accent-3: #a23b3b;
+  --amber: #a86614;
+  --shadow: 0 18px 50px rgba(58, 47, 31, 0.12);
+}
+
+:root[data-theme="dark"] {
+  --bg: #12110f;
+  --panel: #1c1a17;
+  --panel-strong: #24211d;
+  --text: #f5efe4;
+  --muted: #afa69a;
+  --line: #39342e;
+  --accent: #39b795;
+  --accent-2: #6fa8ff;
+  --accent-3: #ff7c74;
+  --amber: #f1b45b;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(14, 124, 104, 0.08), transparent 320px),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(57, 183, 149, 0.35);
+}
+
+.oracle-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}

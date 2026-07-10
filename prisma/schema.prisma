@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DecisionDomain {
+  BUSINESS
+  INVESTMENT
+  CAREER
+  PURCHASE
+  STRATEGY
+  STARTUP
+  PERSONAL
+}
+
+enum RiskTolerance {
+  CONSERVATIVE
+  BALANCED
+  AGGRESSIVE
+}
+
+enum PredictionOutcome {
+  PENDING
+  TRUE
+  FALSE
+}
+
+model User {
+  id               String       @id @default(cuid())
+  clerkId          String       @unique
+  email            String       @unique
+  name             String?
+  stripeCustomerId String?      @unique
+  decisions        Decision[]
+  predictions      Prediction[]
+  subscriptions    Subscription[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Decision {
+  id             String            @id @default(cuid())
+  userId         String
+  title          String
+  domain         DecisionDomain
+  prompt         String
+  riskTolerance  RiskTolerance     @default(BALANCED)
+  timeHorizon    String
+  budget         String?
+  successMetric  String
+  recommendation String
+  confidence     Float
+  evidenceScore  Float
+  status         String            @default("draft")
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  citations      EvidenceCitation[]
+  scenarios      Scenario[]
+  risks          Risk[]
+  simulations    SimulationRun[]
+  predictions    Prediction[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model EvidenceCitation {
+  id          String   @id @default(cuid())
+  decisionId  String
+  title       String
+  source      String
+  url         String
+  sourceType  String
+  confidence  Float
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Scenario {
+  id          String   @id @default(cuid())
+  decisionId  String
+  name        String
+  probability Float
+  payoff      Float
+  narrative   String
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+}
+
+model Risk {
+  id          String   @id @default(cuid())
+  decisionId  String
+  name        String
+  probability Int
+  impact      Int
+  mitigation  String
+  confidence  Float
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+}
+
+model SimulationRun {
+  id                 String   @id @default(cuid())
+  decisionId          String
+  iterations          Int
+  expectedValue       Float
+  successProbability  Float
+  p10                 Float
+  p50                 Float
+  p90                 Float
+  decision            Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+}
+
+model Prediction {
+  id          String            @id @default(cuid())
+  userId      String
+  decisionId  String?
+  statement   String
+  probability Float
+  dueDate     DateTime
+  outcome     PredictionOutcome @default(PENDING)
+  brierScore  Float?
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decision    Decision?         @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now())
+  resolvedAt  DateTime?
+
+  @@index([userId, dueDate])
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  stripeSubscriptionId  String   @unique
+  status               String
+  plan                 String
+  currentPeriodEnd     DateTime
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

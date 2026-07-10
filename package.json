@@ -1,0 +1,33 @@
+{
+  "name": "oracle-decision-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:web": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "typecheck": "npm --workspace apps/web run typecheck",
+    "test": "npm run test:web && npm run test:api",
+    "test:web": "npm --workspace apps/web run test",
+    "test:api": "cd apps/api && python3 -m pytest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:validate": "prisma validate"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.3",
+    "dotenv": "17.2.3",
+    "prisma": "7.8.0"
+  },
+  "overrides": {
+    "@hono/node-server": "1.19.13",
+    "next": {
+      "postcss": "8.5.16"
+    },
+    "postcss": "8.5.16"
+  }
+}
