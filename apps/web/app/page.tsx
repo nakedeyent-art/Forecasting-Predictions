@@ -78,6 +78,12 @@ export default function Home() {
     );
   }
 
+  function updateDecision(nextDecision: DecisionRequest) {
+    setDecision(nextDecision);
+    setAnalysis(null);
+    setError(null);
+  }
+
   return (
     <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
@@ -145,7 +151,7 @@ export default function Home() {
               <DecisionForm
                 value={decision}
                 isLoading={isLoading}
-                onChange={setDecision}
+                onChange={updateDecision}
                 onSubmit={runAnalysis}
                 onReset={() => {
                   setDecision(sampleDecision);

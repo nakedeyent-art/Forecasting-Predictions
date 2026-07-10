@@ -1,6 +1,7 @@
 "use client";
 
-import { Brain, RefreshCw, Send } from "lucide-react";
+import { Brain, RefreshCw, Send, WandSparkles } from "lucide-react";
+import { decisionPresets, getPresetById } from "@/lib/presets";
 import type { DecisionDomain, DecisionRequest, RiskTolerance } from "@/lib/types";
 
 const domains: DecisionDomain[] = [
@@ -44,6 +45,33 @@ export function DecisionForm({ value, isLoading, onChange, onSubmit, onReset }: 
           <RefreshCw className="size-4" />
         </button>
       </div>
+
+      <label className="mb-3 block space-y-1 text-sm">
+        <span className="flex items-center gap-2 text-[var(--muted)]">
+          <WandSparkles className="size-4 text-[var(--accent)]" />
+          Preset
+        </span>
+        <select
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 outline-none focus:border-[var(--accent)]"
+          defaultValue=""
+          onChange={(event) => {
+            const preset = getPresetById(event.target.value);
+            if (preset) {
+              onChange(preset.request);
+            }
+            event.target.value = "";
+          }}
+        >
+          <option value="" disabled>
+            Select a preset
+          </option>
+          {decisionPresets.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className="grid gap-3 md:grid-cols-2">
         <label className="space-y-1 text-sm">

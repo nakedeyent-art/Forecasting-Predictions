@@ -46,6 +46,7 @@ docker compose up --build
 The implemented MVP includes:
 
 - Decision workspace
+- Topic presets for common analysis styles
 - Decomposition into goals, constraints, assumptions, risks, unknowns, stakeholders, and success metrics
 - Citation-shaped research evidence
 - Best/base/worst/black-swan forecast scenarios
