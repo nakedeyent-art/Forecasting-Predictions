@@ -21,7 +21,7 @@ pip install -r apps/api/requirements.txt
 npm run dev
 ```
 
-The web app runs on `http://localhost:3000` and the API runs on `http://localhost:8000`.
+The web app runs on `http://localhost:3000` and the API runs on `http://localhost:8001`.
 
 Copy `.env.example` to `.env` when connecting real services. The MVP works without API keys by using deterministic local analysis.
 
