@@ -3,13 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "apps/mobile"
   ],
   "scripts": {
     "dev": "concurrently -n api,web -c green,cyan \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001",
     "dev:web": "npm --workspace apps/web run dev",
+    "dev:mobile": "npm --workspace apps/mobile run dev",
     "build": "npm --workspace apps/web run build",
+    "mobile:build": "npm --workspace apps/mobile run build",
+    "mobile:sync": "npm run mobile:build && cap sync",
+    "mobile:android:debug": "cd android && JAVA_HOME=${JAVA_HOME:-/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home} ./gradlew assembleDebug",
+    "mobile:android:bundle": "cd android && JAVA_HOME=${JAVA_HOME:-/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home} ./gradlew bundleRelease",
+    "mobile:ios:sim": "xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
+    "mobile:open:android": "cap open android",
+    "mobile:open:ios": "cap open ios",
     "typecheck": "npm --workspace apps/web run typecheck",
     "test": "npm run test:web && npm run test:api",
     "test:web": "npm --workspace apps/web run test",
@@ -19,9 +28,15 @@
     "prisma:validate": "prisma validate"
   },
   "devDependencies": {
+    "@capacitor/android": "8.4.1",
+    "@capacitor/cli": "8.4.1",
+    "@capacitor/ios": "8.4.1",
     "concurrently": "9.2.3",
     "dotenv": "17.2.3",
     "prisma": "7.8.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.4.1"
   },
   "overrides": {
     "@hono/node-server": "1.19.13",
