@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Moon, Save, Sun } from "lucide-react";
 import { DecisionForm } from "@/components/DecisionForm";
+import { InstructionManual } from "@/components/InstructionManual";
 import { PredictionJournal } from "@/components/PredictionJournal";
 import { ReportPanel } from "@/components/ReportPanel";
 import { analyzeDecision } from "@/lib/api";
@@ -159,6 +160,7 @@ export default function Home() {
                   setError(null);
                 }}
               />
+              <InstructionManual />
               <PredictionJournal predictions={predictions} onResolve={resolvePrediction} />
             </div>
             <ReportPanel analysis={analysis} />
