@@ -33,6 +33,7 @@ jobs:
           python-version: "3.13"
       - run: npm ci
       - run: pip install -r apps/api/requirements.txt
+      - run: DATABASE_URL="postgresql://oracle:oracle@localhost:5432/oracle" npm run prisma:generate
       - run: npm --workspace apps/mobile run typecheck
       - run: npm run typecheck
       - run: npm run test:web
