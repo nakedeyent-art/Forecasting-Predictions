@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brierScore, calibrationLabel } from "./calibration";
+import { brierScore, calibrationLabel, calibrationSummary } from "./calibration";
 import type { JournalPrediction } from "./types";
 
 const basePrediction = {
@@ -30,5 +30,15 @@ describe("calibration", () => {
     expect(calibrationLabel(null)).toBe("Pending");
     expect(calibrationLabel(0.05)).toBe("Excellent");
     expect(calibrationLabel(0.3)).toBe("Needs work");
+  });
+
+  it("excludes voided predictions from calibration summary", () => {
+    const summary = calibrationSummary([
+      { ...basePrediction, id: "a", probability: 0.8, outcome: true, status: "resolved" },
+      { ...basePrediction, id: "b", probability: 0.9, status: "void" }
+    ]);
+
+    expect(summary.resolved).toBe(1);
+    expect(summary.voided).toBe(1);
   });
 });

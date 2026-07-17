@@ -6,8 +6,9 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test; status=$?; next typegen; exit $status"
   },
   "dependencies": {
     "@clerk/nextjs": "7.5.16",
@@ -25,6 +26,7 @@
     "@types/react-dom": "19.2.3",
     "tailwindcss": "4.3.2",
     "typescript": "5.9.3",
+    "@playwright/test": "1.58.0",
     "vitest": "4.1.10"
   }
 }

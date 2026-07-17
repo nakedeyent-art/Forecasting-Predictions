@@ -23,10 +23,12 @@ export function RiskHeatmap({ risks }: { risks: RiskItem[] }) {
           return (
             <div
               key={`${probability}-${impact}`}
+              aria-label={`Probability ${probability}, impact ${impact}, ${matches.length} risks: ${matches.map((risk) => risk.name).join(", ") || "none"}`}
               className={`flex aspect-square items-center justify-center rounded-md text-xs font-semibold ${heatColor(probability, impact)}`}
+              role="img"
               title={`Probability ${probability}, impact ${impact}`}
             >
-              {matches.length ? matches.length : ""}
+              {matches.length ? matches.map((risk) => risk.name.charAt(0)).join("") : ""}
             </div>
           );
         })}

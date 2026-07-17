@@ -27,6 +27,9 @@ export function ReportPanel({ analysis }: { analysis: DecisionAnalysis | null })
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)]">Recommendation</p>
             <h2 className="mt-2 text-2xl font-semibold leading-tight">{analysis.report.recommendation}</h2>
+            <span className="mt-3 inline-flex rounded-md border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--muted)]">
+              {analysis.report.recommendationLevel}
+            </span>
           </div>
           <Sparkles className="mt-1 size-6 shrink-0 text-[var(--amber)]" />
         </div>
@@ -34,6 +37,14 @@ export function ReportPanel({ analysis }: { analysis: DecisionAnalysis | null })
           <MetricTile label="Confidence" value={`${Math.round(analysis.report.confidenceScore * 100)}%`} />
           <MetricTile label="Evidence" value={`${Math.round(analysis.report.evidenceStrength * 100)}%`} tone="blue" />
           <MetricTile label="Success" value={`${Math.round(analysis.simulation.successProbability * 100)}%`} tone="amber" />
+        </div>
+        <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+          <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)]">What would change my mind</p>
+          <ul className="mt-2 space-y-2 text-sm text-[var(--muted)]">
+            {analysis.report.whatWouldChangeMind.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -103,7 +114,19 @@ export function ReportPanel({ analysis }: { analysis: DecisionAnalysis | null })
       </div>
 
       <section className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4">
-        <h2 className="mb-4 text-base font-semibold">Evidence</h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Evidence</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {analysis.researchStatus === "live"
+                ? "Live citations from configured research providers."
+                : "Illustrative fallback evidence. Configure Tavily or Exa for live citations."}
+            </p>
+          </div>
+          <span className="rounded-md border border-[var(--line)] px-2 py-1 text-xs uppercase text-[var(--muted)]">
+            {analysis.researchStatus}
+          </span>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           {analysis.evidence.map((item) => (
             <a
@@ -117,7 +140,11 @@ export function ReportPanel({ analysis }: { analysis: DecisionAnalysis | null })
                 <p className="text-sm font-semibold">{item.title}</p>
                 <span className="text-xs text-[var(--muted)]">{Math.round(item.confidence * 100)}%</span>
               </div>
-              <p className="mt-1 text-xs text-[var(--muted)]">{item.sourceType}</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                {item.sourceType} · {item.direction} · {item.isReal ? "retrieved" : "illustrative"}
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">{item.summary}</p>
+              <p className="mt-2 text-xs text-[var(--muted)]">{item.evidenceNote}</p>
             </a>
           ))}
         </div>

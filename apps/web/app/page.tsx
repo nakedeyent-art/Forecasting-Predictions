@@ -2,38 +2,72 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Moon, Save, Sun } from "lucide-react";
+import { ActionTracker } from "@/components/ActionTracker";
+import { ComparisonPanel } from "@/components/ComparisonPanel";
+import { DecisionHistory } from "@/components/DecisionHistory";
 import { DecisionForm } from "@/components/DecisionForm";
 import { InstructionManual } from "@/components/InstructionManual";
 import { PredictionJournal } from "@/components/PredictionJournal";
 import { ReportPanel } from "@/components/ReportPanel";
-import { analyzeDecision } from "@/lib/api";
+import { analyzeDecision, syncSavedDecision } from "@/lib/api";
 import { sampleDecision } from "@/lib/sample";
-import type { DecisionAnalysis, DecisionRequest, JournalPrediction } from "@/lib/types";
-
-const storageKey = "oracle.predictionJournal";
+import {
+  isActionItem,
+  isJournalPrediction,
+  isSavedDecision,
+  isUserPreset,
+  readStoredArray,
+  storageKeys,
+  writeStoredArray
+} from "@/lib/storage";
+import type { ActionItem, DecisionAnalysis, DecisionRequest, JournalPrediction, SavedDecision, UserPreset } from "@/lib/types";
+import { validateDecisionRequest } from "@/lib/validation";
 
 export default function Home() {
   const [decision, setDecision] = useState<DecisionRequest>(sampleDecision);
   const [analysis, setAnalysis] = useState<DecisionAnalysis | null>(null);
   const [predictions, setPredictions] = useState<JournalPrediction[]>([]);
+  const [savedDecisions, setSavedDecisions] = useState<SavedDecision[]>([]);
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [customPresets, setCustomPresets] = useState<UserPreset[]>([]);
+  const [comparisonBaseline, setComparisonBaseline] = useState<SavedDecision | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(storageKeys.theme, theme);
   }, [theme]);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(storageKey);
-    if (raw) {
-      setPredictions(JSON.parse(raw) as JournalPrediction[]);
+    const storedTheme = window.localStorage.getItem(storageKeys.theme);
+    if (storedTheme === "dark" || storedTheme === "light") {
+      setTheme(storedTheme);
+    } else if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
+      setTheme("light");
     }
+    setPredictions(readStoredArray(window.localStorage, storageKeys.predictions, isJournalPrediction));
+    setSavedDecisions(readStoredArray(window.localStorage, storageKeys.decisions, isSavedDecision));
+    setActions(readStoredArray(window.localStorage, storageKeys.actions, isActionItem));
+    setCustomPresets(readStoredArray(window.localStorage, storageKeys.presets, isUserPreset));
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(predictions));
+    writeStoredArray(window.localStorage, storageKeys.predictions, predictions);
   }, [predictions]);
+
+  useEffect(() => {
+    writeStoredArray(window.localStorage, storageKeys.decisions, savedDecisions);
+  }, [savedDecisions]);
+
+  useEffect(() => {
+    writeStoredArray(window.localStorage, storageKeys.actions, actions);
+  }, [actions]);
+
+  useEffect(() => {
+    writeStoredArray(window.localStorage, storageKeys.presets, customPresets);
+  }, [customPresets]);
 
   const timeline = useMemo(
     () => [
@@ -48,11 +82,28 @@ export default function Home() {
   );
 
   async function runAnalysis() {
+    const validationErrors = validateDecisionRequest(decision);
+    if (validationErrors.length) {
+      setError(validationErrors.join(" "));
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       const result = await analyzeDecision(decision);
       setAnalysis(result);
+      setComparisonBaseline(savedDecisions[0] ?? null);
+      const savedDecision: SavedDecision = {
+        id: result.id,
+        title: decision.title,
+        createdAt: result.generatedAt,
+        request: decision,
+        analysis: result
+      };
+      setSavedDecisions((current) => [savedDecision, ...current.filter((item) => item.id !== savedDecision.id)].slice(0, 50));
+      setActions((current) => [...result.actions, ...current].slice(0, 100));
+      void syncSavedDecision(savedDecision);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Oracle API request failed");
     } finally {
@@ -68,15 +119,66 @@ export default function Home() {
       ...analysis.prediction,
       id: `${analysis.id}-${Date.now()}`,
       title: decision.title,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      status: "open"
     };
-    setPredictions((current) => [prediction, ...current]);
+    setPredictions((current) => {
+      if (current.some((item) => item.statement === prediction.statement && item.status !== "void")) {
+        return current;
+      }
+      return [prediction, ...current];
+    });
   }
 
   function resolvePrediction(id: string, outcome: boolean) {
     setPredictions((current) =>
-      current.map((prediction) => (prediction.id === id ? { ...prediction, outcome } : prediction))
+      current.map((prediction) =>
+        prediction.id === id
+          ? { ...prediction, outcome, status: "resolved", resolvedAt: new Date().toISOString() }
+          : prediction
+      )
     );
+  }
+
+  function voidPrediction(id: string) {
+    setPredictions((current) =>
+      current.map((prediction) => (prediction.id === id ? { ...prediction, status: "void", outcome: null } : prediction))
+    );
+  }
+
+  function reopenPrediction(id: string) {
+    setPredictions((current) =>
+      current.map((prediction) =>
+        prediction.id === id
+          ? { ...prediction, status: "open", outcome: null, resolvedAt: undefined, resolutionNote: undefined }
+          : prediction
+      )
+    );
+  }
+
+  function deletePrediction(id: string) {
+    setPredictions((current) => current.filter((prediction) => prediction.id !== id));
+  }
+
+  function saveCustomPreset() {
+    const preset: UserPreset = {
+      id: `preset-${Date.now()}`,
+      label: decision.title || "Custom preset",
+      createdAt: new Date().toISOString(),
+      request: decision
+    };
+    setCustomPresets((current) => [preset, ...current.filter((item) => item.label !== preset.label)].slice(0, 20));
+  }
+
+  function loadSavedDecision(savedDecision: SavedDecision) {
+    setDecision(savedDecision.request);
+    setAnalysis(savedDecision.analysis);
+    setComparisonBaseline(savedDecisions.find((item) => item.id !== savedDecision.id) ?? null);
+    setError(null);
+  }
+
+  function updateAction(id: string, status: ActionItem["status"]) {
+    setActions((current) => current.map((action) => (action.id === id ? { ...action, status } : action)));
   }
 
   function updateDecision(nextDecision: DecisionRequest) {
@@ -154,6 +256,8 @@ export default function Home() {
                 isLoading={isLoading}
                 onChange={updateDecision}
                 onSubmit={runAnalysis}
+                customPresets={customPresets}
+                onSavePreset={saveCustomPreset}
                 onReset={() => {
                   setDecision(sampleDecision);
                   setAnalysis(null);
@@ -161,9 +265,24 @@ export default function Home() {
                 }}
               />
               <InstructionManual />
-              <PredictionJournal predictions={predictions} onResolve={resolvePrediction} />
+              <DecisionHistory
+                decisions={savedDecisions}
+                onDelete={(id) => setSavedDecisions((current) => current.filter((item) => item.id !== id))}
+                onLoad={loadSavedDecision}
+              />
+              <ActionTracker actions={actions} onUpdate={updateAction} />
+              <PredictionJournal
+                predictions={predictions}
+                onDelete={deletePrediction}
+                onReopen={reopenPrediction}
+                onResolve={resolvePrediction}
+                onVoid={voidPrediction}
+              />
             </div>
-            <ReportPanel analysis={analysis} />
+            <div className="space-y-4">
+              <ComparisonPanel current={analysis} previous={comparisonBaseline} />
+              <ReportPanel analysis={analysis} />
+            </div>
           </div>
         </section>
       </div>

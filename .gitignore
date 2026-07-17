@@ -3,6 +3,10 @@ node_modules/
 out/
 dist/
 coverage/
+playwright-report/
+test-results/
+apps/web/playwright-report/
+apps/web/test-results/
 .env
 .env.local
 .venv/

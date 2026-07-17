@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,web -c green,cyan \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001",
+    "dev:api": "cd apps/api && (test -x ../../.venv/bin/python && ../../.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001 || python3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001)",
     "dev:web": "npm --workspace apps/web run dev",
     "dev:mobile": "npm --workspace apps/mobile run dev",
     "build": "npm --workspace apps/web run build",
@@ -23,6 +23,7 @@
     "test": "npm run test:web && npm run test:api",
     "test:web": "npm --workspace apps/web run test",
     "test:api": "cd apps/api && python3 -m pytest",
+    "test:e2e": "npm --workspace apps/web run test:e2e",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:validate": "prisma validate"

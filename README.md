@@ -1,14 +1,14 @@
 # Oracle
 
-Oracle is an AI-ready Decision Intelligence Platform for decisions under uncertainty. The MVP turns an open-ended decision into assumptions, evidence, scenarios, probabilities, simulations, risks, a recommendation, and a prediction journal for calibration over time.
+Oracle is a Decision Intelligence Platform for decisions under uncertainty. The MVP turns an open-ended decision into assumptions, evidence, scenarios, probabilities, simulations, risks, a recommendation, action items, and a prediction journal for calibration over time.
 
 ## Stack
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Backend: FastAPI, Pydantic
 - Database: PostgreSQL schema managed with Prisma
-- Auth and payments: Clerk and Stripe integration points
-- AI and search: OpenAI Responses API, Anthropic, Tavily/Exa integration points
+- Auth and payments: Clerk and Stripe
+- AI and search: OpenAI Responses API and Tavily/Exa, with deterministic fallbacks when keys are missing
 - Deployment: Docker, Vercel-compatible web app, Railway-compatible API
 
 ## Local Development
@@ -23,7 +23,52 @@ npm run dev
 
 The web app runs on `http://localhost:3000` and the API runs on `http://localhost:8001`.
 
-Copy `.env.example` to `.env` when connecting real services. The MVP works without API keys by using deterministic local analysis.
+Copy `.env.example` to `.env` when connecting real services. The app works without API keys by using deterministic local analysis and clearly marked illustrative evidence.
+
+## Runtime Modes
+
+Oracle separates deterministic forecasting from outside services:
+
+- The local decision engine owns probability, scenario, risk, simulation, and calibration numbers.
+- OpenAI can improve written recommendations when `OPENAI_API_KEY` is present, but failures fall back to deterministic output.
+- Tavily or Exa can provide live research citations when `TAVILY_API_KEY` or `EXA_API_KEY` is present.
+- Without search keys, evidence is marked `illustrative`; users should treat it as a structured starting point, not verified research.
+- Clerk and Stripe are optional at runtime unless `ORACLE_REQUIRE_AUTH=true`.
+
+Key production environment variables:
+
+```bash
+OPENAI_API_KEY=""
+TAVILY_API_KEY=""
+EXA_API_KEY=""
+ORACLE_CORS_ORIGINS="https://your-web-domain.com"
+ORACLE_REQUIRE_AUTH="false"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
+CLERK_SECRET_KEY=""
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
+NEXT_PUBLIC_STRIPE_PRICE_ID=""
+NEXT_PUBLIC_APP_URL="https://your-web-domain.com"
+DATABASE_URL="postgresql://..."
+```
+
+## Implemented MVP Surface
+
+- Guided decision workspace with built-in and user-saved presets
+- Client-side validation and bounded API models for safer inputs
+- Decomposition into goals, constraints, assumptions, risks, unknowns, stakeholders, and success metrics
+- Live Tavily/Exa research integration with citation status, direction, confidence, summaries, and fallback labels
+- Bayesian probability update using evidence direction and confidence
+- Scenario-mixture Monte Carlo simulation with success probability, loss probability, and expected shortfall
+- Best/base/worst/black-swan forecast scenarios
+- Specialist debate panel with explicit red-team critique
+- Risk matrix and accessible heatmap
+- Decision report with recommendation level, confidence, evidence strength, risks, opportunities, next steps, and "what would change my mind"
+- Local-first decision history, action tracker, comparison panel, and prediction journal
+- Calibration analytics with Brier score, confidence bins, resolved/open/voided counts, and improvement guidance
+- Optional authenticated decision-history persistence through Prisma
+- Stripe checkout and webhook subscription persistence when credentials are configured
+- Embedded instruction manual and glossary inside the app
 
 ## Mobile Apps
 
@@ -67,15 +112,22 @@ Without those variables, Gradle still produces `android/app/build/outputs/bundle
 ## Verification
 
 ```bash
+npm install
 npm run typecheck
+npm --workspace apps/mobile run typecheck
 npm run test:web
 source .venv/bin/activate && npm run test:api
+npm run test:e2e
 npm run build
 npm run mobile:build
+npm run mobile:sync
 npm run mobile:android:debug
+npm run mobile:android:bundle
 npm run mobile:ios:sim
-DATABASE_URL="postgresql://oracle:oracle@localhost:5432/oracle" npx prisma validate
+DATABASE_URL="postgresql://oracle:oracle@localhost:5432/oracle" npm run prisma:validate
 ```
+
+`npm run test:e2e` launches the local API and web app, submits a decision through the browser, and verifies that the report renders with illustrative evidence when live research is not configured.
 
 ## Docker
 
@@ -83,18 +135,11 @@ DATABASE_URL="postgresql://oracle:oracle@localhost:5432/oracle" npx prisma valid
 docker compose up --build
 ```
 
-## MVP Scope
+## Production Gaps
 
-The implemented MVP includes:
-
-- Decision workspace
-- Topic presets for common analysis styles
-- Decomposition into goals, constraints, assumptions, risks, unknowns, stakeholders, and success metrics
-- Citation-shaped research evidence
-- Best/base/worst/black-swan forecast scenarios
-- Bayesian probability update
-- Monte Carlo simulation
-- Specialist AI debate report
-- Risk matrix
-- Decision recommendation report
-- Prediction journal and Brier score calibration
+- Real collaboration/team accounts
+- Hosted production API and database
+- Clerk and Stripe production credentials
+- App Store/TestFlight upload and Play Store upload
+- Real search billing keys for Tavily or Exa
+- Human review of calibrated model assumptions before high-stakes use

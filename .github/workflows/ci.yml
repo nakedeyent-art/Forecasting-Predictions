@@ -31,10 +31,12 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: npm install
+      - run: npm ci
       - run: pip install -r apps/api/requirements.txt
+      - run: npm --workspace apps/mobile run typecheck
       - run: npm run typecheck
       - run: npm run test:web
       - run: npm run test:api
       - run: DATABASE_URL="postgresql://oracle:oracle@localhost:5432/oracle" npm run prisma:validate
       - run: npm run build
+      - run: npm run mobile:build

@@ -26,6 +26,34 @@ enum PredictionOutcome {
   PENDING
   TRUE
   FALSE
+  VOID
+}
+
+enum DecisionStatus {
+  DRAFT
+  ANALYZED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum ActionStatus {
+  OPEN
+  DONE
+  VOID
 }
 
 model User {
@@ -37,6 +65,8 @@ model User {
   decisions        Decision[]
   predictions      Prediction[]
   subscriptions    Subscription[]
+  actionItems      ActionItem[]
+  presets          UserPreset[]
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }
@@ -54,17 +84,24 @@ model Decision {
   recommendation String
   confidence     Float
   evidenceScore  Float
-  status         String            @default("draft")
+  posterior      Float?
+  prior          Float?
+  likelihoodRatio Float?
+  researchStatus String            @default("illustrative")
+  analysisJson   Json?
+  status         DecisionStatus    @default(DRAFT)
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   citations      EvidenceCitation[]
   scenarios      Scenario[]
   risks          Risk[]
   simulations    SimulationRun[]
   predictions    Prediction[]
+  actionItems     ActionItem[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   @@index([userId, createdAt])
+  @@index([status])
 }
 
 model EvidenceCitation {
@@ -75,8 +112,14 @@ model EvidenceCitation {
   url         String
   sourceType  String
   confidence  Float
+  direction   String   @default("neutral")
+  summary     String?
+  isReal      Boolean  @default(false)
+  retrievedAt DateTime?
   decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+
+  @@index([decisionId])
 }
 
 model Scenario {
@@ -87,6 +130,9 @@ model Scenario {
   payoff      Float
   narrative   String
   decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([decisionId])
 }
 
 model Risk {
@@ -98,6 +144,9 @@ model Risk {
   mitigation  String
   confidence  Float
   decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([decisionId])
 }
 
 model SimulationRun {
@@ -109,8 +158,12 @@ model SimulationRun {
   p10                 Float
   p50                 Float
   p90                 Float
+  lossProbability     Float?
+  expectedShortfall   Float?
   decision            Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
   createdAt           DateTime @default(now())
+
+  @@index([decisionId])
 }
 
 model Prediction {
@@ -122,22 +175,68 @@ model Prediction {
   dueDate     DateTime
   outcome     PredictionOutcome @default(PENDING)
   brierScore  Float?
+  resolutionNote String?
+  updates     PredictionUpdate[]
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   decision    Decision?         @relation(fields: [decisionId], references: [id], onDelete: SetNull)
   createdAt   DateTime          @default(now())
   resolvedAt  DateTime?
 
   @@index([userId, dueDate])
+  @@index([decisionId])
 }
 
 model Subscription {
   id                   String   @id @default(cuid())
   userId               String
   stripeSubscriptionId  String   @unique
-  status               String
-  plan                 String
+  status               SubscriptionStatus
+  plan                 SubscriptionPlan
   currentPeriodEnd     DateTime
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PredictionUpdate {
+  id           String     @id @default(cuid())
+  predictionId String
+  probability Float
+  note         String?
+  prediction   Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@index([predictionId, createdAt])
+}
+
+model ActionItem {
+  id          String       @id @default(cuid())
+  userId      String
+  decisionId  String?
+  title       String
+  owner       String
+  dueDate     DateTime
+  status      ActionStatus @default(OPEN)
+  rationale   String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decision    Decision?    @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId, status, dueDate])
+  @@index([decisionId])
+}
+
+model UserPreset {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String
+  request   Json
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }

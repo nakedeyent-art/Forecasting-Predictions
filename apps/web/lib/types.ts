@@ -8,6 +8,9 @@ export type DecisionDomain =
   | "Personal";
 
 export type RiskTolerance = "Conservative" | "Balanced" | "Aggressive";
+export type EvidenceDirection = "supports" | "contradicts" | "neutral";
+export type ResearchStatus = "live" | "illustrative" | "unavailable";
+export type ActionStatus = "open" | "done" | "void";
 
 export type DecisionRequest = {
   title: string;
@@ -36,6 +39,11 @@ export type EvidenceCitation = {
   url: string;
   sourceType: string;
   confidence: number;
+  direction: EvidenceDirection;
+  summary: string;
+  isReal: boolean;
+  retrievedAt?: string | null;
+  evidenceNote: string;
 };
 
 export type ForecastScenario = {
@@ -58,6 +66,8 @@ export type SimulationSummary = {
   iterations: number;
   expectedValue: number;
   successProbability: number;
+  lossProbability: number;
+  expectedShortfall: number;
   p10: number;
   p50: number;
   p90: number;
@@ -81,11 +91,30 @@ export type RiskItem = {
 
 export type DecisionReport = {
   recommendation: string;
+  recommendationLevel: "Proceed" | "Evidence sprint" | "Do not commit";
   confidenceScore: number;
   evidenceStrength: number;
   keyRisks: string[];
   keyOpportunities: string[];
   nextSteps: string[];
+  whatWouldChangeMind: string[];
+};
+
+export type CalibrationInsight = {
+  resolvedCount: number;
+  openCount: number;
+  brierScore?: number | null;
+  reliability: string;
+  recommendation: string;
+};
+
+export type ActionItem = {
+  id: string;
+  title: string;
+  owner: string;
+  dueDate: string;
+  status: ActionStatus;
+  rationale: string;
 };
 
 export type PredictionDraft = {
@@ -97,6 +126,7 @@ export type PredictionDraft = {
 export type DecisionAnalysis = {
   id: string;
   generatedAt: string;
+  researchStatus: ResearchStatus;
   decomposition: Decomposition;
   evidence: EvidenceCitation[];
   scenarios: ForecastScenario[];
@@ -106,11 +136,31 @@ export type DecisionAnalysis = {
   riskMatrix: RiskItem[];
   report: DecisionReport;
   prediction: PredictionDraft;
+  calibration: CalibrationInsight;
+  actions: ActionItem[];
 };
 
 export type JournalPrediction = PredictionDraft & {
   id: string;
   title: string;
   createdAt: string;
-  outcome?: boolean;
+  outcome?: boolean | null;
+  resolvedAt?: string;
+  resolutionNote?: string;
+  status?: "open" | "resolved" | "void";
+};
+
+export type SavedDecision = {
+  id: string;
+  title: string;
+  createdAt: string;
+  request: DecisionRequest;
+  analysis: DecisionAnalysis;
+};
+
+export type UserPreset = {
+  id: string;
+  label: string;
+  createdAt: string;
+  request: DecisionRequest;
 };

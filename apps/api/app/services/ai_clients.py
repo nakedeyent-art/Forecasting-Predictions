@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
 from app.models import DecisionRequest
+
+logger = logging.getLogger("oracle.ai")
 
 
 async def maybe_generate_ai_overlay(
@@ -25,7 +28,7 @@ async def maybe_generate_ai_overlay(
     try:
         from openai import AsyncOpenAI
 
-        client = AsyncOpenAI()
+        client = AsyncOpenAI(timeout=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "15")))
         model = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
         response = await client.responses.create(
             model=model,
@@ -85,6 +88,7 @@ async def maybe_generate_ai_overlay(
         payload = json.loads(response.output_text)
         if isinstance(payload, dict):
             return payload
-    except Exception:
+    except Exception as exc:
+        logger.warning("AI overlay failed; using deterministic report", exc_info=exc)
         return None
     return None

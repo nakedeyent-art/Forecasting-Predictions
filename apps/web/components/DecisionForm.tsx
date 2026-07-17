@@ -1,7 +1,8 @@
 "use client";
 
-import { Brain, RefreshCw, Send, WandSparkles } from "lucide-react";
+import { Brain, RefreshCw, Save, Send, WandSparkles } from "lucide-react";
 import { decisionPresets, getPresetById } from "@/lib/presets";
+import type { UserPreset } from "@/lib/types";
 import type { DecisionDomain, DecisionRequest, RiskTolerance } from "@/lib/types";
 
 const domains: DecisionDomain[] = [
@@ -22,9 +23,19 @@ type DecisionFormProps = {
   onChange: (value: DecisionRequest) => void;
   onSubmit: () => void;
   onReset: () => void;
+  customPresets?: UserPreset[];
+  onSavePreset?: () => void;
 };
 
-export function DecisionForm({ value, isLoading, onChange, onSubmit, onReset }: DecisionFormProps) {
+export function DecisionForm({
+  value,
+  isLoading,
+  onChange,
+  onSubmit,
+  onReset,
+  customPresets = [],
+  onSavePreset
+}: DecisionFormProps) {
   const setField = <Key extends keyof DecisionRequest>(key: Key, next: DecisionRequest[Key]) => {
     onChange({ ...value, [key]: next });
   };
@@ -55,9 +66,10 @@ export function DecisionForm({ value, isLoading, onChange, onSubmit, onReset }: 
           className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 outline-none focus:border-[var(--accent)]"
           defaultValue=""
           onChange={(event) => {
-            const preset = getPresetById(event.target.value);
-            if (preset) {
-              onChange(preset.request);
+            const builtInPreset = getPresetById(event.target.value);
+            const customPreset = customPresets.find((preset) => preset.id === event.target.value);
+            if (builtInPreset || customPreset) {
+              onChange((builtInPreset ?? customPreset)?.request as DecisionRequest);
             }
             event.target.value = "";
           }}
@@ -66,6 +78,12 @@ export function DecisionForm({ value, isLoading, onChange, onSubmit, onReset }: 
             Select a preset
           </option>
           {decisionPresets.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+          {customPresets.length ? <option disabled>Custom presets</option> : null}
+          {customPresets.map((preset) => (
             <option key={preset.id} value={preset.id}>
               {preset.label}
             </option>
@@ -162,15 +180,27 @@ export function DecisionForm({ value, isLoading, onChange, onSubmit, onReset }: 
         />
       </label>
 
-      <button
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-3 font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={isLoading}
-        onClick={onSubmit}
-        type="button"
-      >
-        <Send className="size-4" />
-        {isLoading ? "Analyzing" : "Analyze Decision"}
-      </button>
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <button
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-3 font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isLoading}
+          onClick={onSubmit}
+          type="button"
+        >
+          <Send className="size-4" />
+          {isLoading ? "Analyzing" : "Analyze Decision"}
+        </button>
+        <button
+          aria-label="Save current form as a custom preset"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--line)] px-4 py-3 font-semibold hover:bg-[var(--panel-strong)]"
+          onClick={onSavePreset}
+          title="Save current form as a custom preset"
+          type="button"
+        >
+          <Save className="size-4" />
+          <span className="sm:hidden">Save Preset</span>
+        </button>
+      </div>
     </section>
   );
 }

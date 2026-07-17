@@ -20,7 +20,14 @@ export function ProbabilityPanel({ probability }: { probability: ProbabilityUpda
               <span>{label}</span>
               <span>{Math.round(value * 100)}%</span>
             </div>
-            <div className="h-2 rounded-full bg-[var(--line)]">
+            <div
+              aria-label={`${label} probability`}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={Math.round(value * 100)}
+              className="h-2 rounded-full bg-[var(--line)]"
+              role="progressbar"
+            >
               <div className={`h-2 rounded-full ${color}`} style={{ width: `${value * 100}%` }} />
             </div>
           </div>
